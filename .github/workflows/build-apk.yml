@@ -2,12 +2,13 @@
 name: Build AnalogClock APK
 
 on:
-  push:
   workflow_dispatch:
+  push:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,18 +19,23 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      - name: Extract Project ZIP
+      - name: Extract ZIP
         run: |
-          ZIP_FILE=$(find . -maxdepth 1 -name '*.zip' | head -n 1)
-          unzip -q "$ZIP_FILE" -d extracted
+          mkdir -p extracted
+          unzip -oq *.zip -d extracted
+          PROJECT_DIR=$(dirname "$(find extracted -name settings.gradle.kts -print -quit)")
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Build APK
-        run: gradle -p extracted/AnalogClock :app:assembleDebug --no-daemon
+        run: gradle -p "$PROJECT_DIR" :app:assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
